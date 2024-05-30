@@ -1,60 +1,76 @@
-import { StyleSheet, Text, View } from "react-native";
-import { Link } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Redirect, useRouter } from "expo-router";
+import { loadUser } from "../services/AuthService";
+import { setToken } from "../services/TokenService";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import axios from "axios";
 
-export default function Page() {
+export default function Home() {
+  const [error, setError] = useState();
+  const router = useRouter();
+
+  async function httpRequest() {
+    await axios
+      .post(
+        "http://127.0.0.1:8000/api/v1",
+        {
+          email: "myrna73@example.org",
+          password: "password",
+          device_name: "celular",
+        },
+        {
+          headers: {
+            Accept: "application/vnd.api+json",
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.log(error.response.data);
+        setError(error.response.data.errors.email)
+      });
+  }
+
+  httpRequest();
+
+  async function handleVerifyUser() {
+    router.replace("/home");
+    await loadUser()
+      .then((response) => {
+        if (response.data.attributes.name) router.replace("/home");
+      })
+      .catch((error) => {
+        console.log("Failed to load user -", error);
+        setToken(null);
+        router.replace("/login");
+      });
+  }
+
+  useEffect(() => {
+    handleVerifyUser();
+  }, []);
+
   return (
-//Lo que en la pagina principal se refleja
     <View style={styles.container}>
-       <View style={styles.header}> 
-       </View>
-      
-      <View style={styles.main}>
-      <Text style={styles.Titulo}>Spend-Wise</Text>
-      </View>
-      <View style={styles.tabs}>
-        <Text style={styles.text}>home</Text>
-        <Text style={styles.text}>Ingresos</Text>
-        <Text style={styles.text}>Gastos</Text>
-      </View>
-
-      
+      <Redirect href={"/home"} />
+      <ActivityIndicator color="#784aed" size="large" />
+      <Text style={styles.text}></Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex:1,//utiliza todo el espacio
-   //flexDirection:"row",
-    backgroundColor: 'green',//pinta el contenedor
-    
-  },
-  header:{
-    flex:1, 
-    backgroundColor: "#1d7750",
-  },
-  main:{
-    flex:6, 
-    backgroundColor: "#ffffff",
+    flex: 1,
+    backgroundColor: "#000017",
+    alignItems: "center",
     justifyContent: "center",
-    maxWidth: 960,
-    marginHorizontal: "auto",
-
   },
-  tabs:{
-    flex:1, 
-    backgroundColor: "#1d7750",
-    flexDirection:"row",
-    justifyContent: 'space-evenly',
-    alignItems:"center",
-  },
-  text:{
+  text: {
     color: "#ffffff",
-    fontSize: 18,
+    fontSize: 20,
+    marginTop: 10,
   },
-  Titulo:{
-      fontSize: 48,
-      fontWeight: "bold",
-    }
-
 });
